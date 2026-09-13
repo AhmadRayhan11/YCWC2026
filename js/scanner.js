@@ -168,7 +168,91 @@ Promise.all([
     btnStart.disabled = false;
 });
 
+const btnEnableCam = document.getElementById('btn-enable-camera');
+const btnDemoCam = document.getElementById('btn-demo-camera');
+let isDemoMode = false;
+
+if (btnEnableCam) {
+    btnEnableCam.addEventListener('click', async () => {
+        isDemoMode = false;
+        const ok = await initCamera();
+        if (ok && typeof showToast === 'function') {
+            showToast("🟢 Camera connected successfully!", "success");
+        }
+    });
+}
+
+if (btnDemoCam) {
+    btnDemoCam.addEventListener('click', () => {
+        isDemoMode = true;
+        setupDemoCamera();
+    });
+}
+
 btnStart.addEventListener('click', startScanner);
+
+/**
+ * Setup simulated camera mode for testing when physical camera is unavailable
+ */
+function setupDemoCamera() {
+    // Create an offscreen animated canvas stream
+    const simCanvas = document.createElement('canvas');
+    simCanvas.width = 640;
+    simCanvas.height = 480;
+    const simCtx = simCanvas.getContext('2d');
+
+    let phase = 0;
+    function drawSimulatedFace() {
+        if (!isDemoMode) return;
+        phase += 0.05;
+
+        // Background
+        simCtx.fillStyle = '#0f172a';
+        simCtx.fillRect(0, 0, 640, 480);
+
+        // Simulated head/face oval
+        simCtx.fillStyle = '#f8daf0';
+        simCtx.beginPath();
+        simCtx.ellipse(320, 220, 110, 140, 0, 0, Math.PI * 2);
+        simCtx.fill();
+
+        // Forehead pulsatile color shift (simulated PPG)
+        const pulse = Math.sin(phase * 2) * 8;
+        simCtx.fillStyle = `rgb(220, ${180 + pulse}, 170)`;
+        simCtx.beginPath();
+        simCtx.ellipse(320, 140, 50, 25, 0, 0, Math.PI * 2);
+        simCtx.fill();
+
+        // Eyes
+        simCtx.fillStyle = '#334155';
+        simCtx.beginPath();
+        simCtx.arc(280, 200, 10, 0, Math.PI * 2);
+        simCtx.arc(360, 200, 10, 0, Math.PI * 2);
+        simCtx.fill();
+
+        // Chest box motion
+        const chestShift = Math.sin(phase * 0.5) * 6;
+        simCtx.fillStyle = '#1e293b';
+        simCtx.fillRect(210, 340 + chestShift, 220, 140);
+
+        requestAnimationFrame(drawSimulatedFace);
+    }
+    drawSimulatedFace();
+
+    try {
+        stream = simCanvas.captureStream(30);
+        video.srcObject = stream;
+        video.play();
+        if (instructionText) {
+            instructionText.textContent = "🎭 Demo Camera Mode active. Position face and click 'Start Scan'.";
+        }
+        if (typeof showToast === 'function') {
+            showToast("🎭 Demo Camera Mode activated! You can now test scanning.", "info");
+        }
+    } catch (e) {
+        console.warn("[Scanner] captureStream fallback:", e);
+    }
+}
 
 /**
  * Initialize camera stream via WebRTC with robust error handling
