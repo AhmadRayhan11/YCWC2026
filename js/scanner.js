@@ -189,16 +189,15 @@ async function initCamera() {
         }
 
         try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: "user"
-                }
-            });
-        } catch (e1) {
-            // Fallback with minimal constraints
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (e1) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+            } catch (e2) {
+                throw e1;
+            }
         }
 
         video.srcObject = stream;
@@ -228,10 +227,12 @@ async function initCamera() {
     } catch (err) {
         console.error("[Scanner] Camera access failed:", err);
         let msg = `⚠️ Camera error: ${err.message}`;
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            msg = "⚠️ Camera access denied. Click the camera icon in your browser address bar to grant permission.";
+        if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            msg = "⚠️ Webcam hardware not detected. Please check if your laptop webcam is turned off via physical switch / Fn key (e.g. Fn + F6 / Fn + F10) or Windows Settings > Privacy > Camera.";
+        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            msg = "⚠️ Camera access denied. Click the site settings icon on the left of the browser URL bar (http://localhost:8000) and set Camera to 'Allow'.";
         } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-            msg = "⚠️ Camera is currently in use by another app (Zoom, Teams, OBS, or Windows Camera App). Please close other apps and try again.";
+            msg = "⚠️ Camera is in use by another app (Zoom, Teams, OBS, or Windows Camera App). Please close other apps and refresh.";
         } else if (window.location.protocol === 'file:') {
             msg = "⚠️ Browser blocks camera in file:// mode. Open via http://localhost:8000.";
         }
