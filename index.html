@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elderly Health Companion AI — Smart Daily Health Monitoring</title>
+    <meta name="description" content="AI-powered elderly health monitoring system combining NLP text classification, computer vision vital sign scanning (rPPG), and voice assistant. Built for YCWC 2026.">
+    <meta name="author" content="YCWC 2026 Team">
+    <meta name="theme-color" content="#030712">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Elderly Health Companion AI">
+    <meta property="og:description" content="Smart AI health monitoring for elderly care — text analysis, vital sign scanner, and voice assistant.">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body data-font-size="normal">
+
+    <!-- ═══════════ SPLASH SCREEN ═══════════ -->
+    <div id="splash-screen" class="splash-screen" role="status" aria-label="Loading application">
+        <div class="splash-logo" aria-hidden="true">🩺</div>
+        <div class="splash-text">Initializing AI Models...</div>
+        <div class="splash-bar">
+            <div id="splash-progress" class="splash-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════ TOAST CONTAINER ═══════════ -->
+    <div id="toast-container" class="toast-container" role="alert" aria-live="polite"></div>
+
+    <!-- ═══════════ NAVIGATION ═══════════ -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <a href="#" class="navbar-brand" aria-label="Elderly Health Companion AI">
+            <div class="logo-icon" aria-hidden="true">🩺</div>
+            <span>HealthCompanion<strong>AI</strong></span>
+        </a>
+
+        <ul class="navbar-nav" role="tablist">
+            <li><button class="nav-link active" role="tab" data-section="hero" aria-selected="true">Home</button></li>
+            <li><button class="nav-link" role="tab" data-section="module-1" aria-selected="false">Health Diary</button></li>
+            <li><button class="nav-link" role="tab" data-section="module-2" aria-selected="false">Vital Scanner</button></li>
+            <li><button class="nav-link" role="tab" data-section="module-3" aria-selected="false">Analytics</button></li>
+        </ul>
+
+        <div class="navbar-controls">
+            <div class="font-size-control" role="group" aria-label="Font size adjustment">
+                <button class="font-size-btn active" data-size="normal" aria-label="Normal font size" title="Normal">A</button>
+                <button class="font-size-btn" data-size="large" aria-label="Large font size" title="Large">A+</button>
+                <button class="font-size-btn" data-size="xlarge" aria-label="Extra large font size" title="Extra Large">A++</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- ═══════════ HERO SECTION ═══════════ -->
+        <section id="hero" class="hero" aria-labelledby="hero-title">
+            <div class="hero-badge">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                AI-Powered Health Monitoring · YCWC 2026
+            </div>
+
+            <h1 id="hero-title">
+                <span class="gradient-text">Elderly Health</span><br>
+                Companion AI
+            </h1>
+
+            <p class="hero-subtitle">
+                Smart daily health monitoring combining <strong>Natural Language Processing</strong>, 
+                <strong>Computer Vision</strong> vital sign scanning, and <strong>Voice Assistant</strong> — 
+                all running locally on your device for maximum privacy.
+            </p>
+
+            <div class="hero-actions">
+                <button class="btn btn-primary btn-lg" id="hero-btn-diary" aria-label="Start writing health diary">
+                    📝 Start Health Diary
+                </button>
+                <button class="btn btn-secondary btn-lg" id="hero-btn-scan" aria-label="Open vital sign scanner">
+                    📷 Vital Sign Scanner
+                </button>
+            </div>
+
+            <div class="hero-stats stagger">
+                <div class="hero-stat">
+                    <div class="stat-number">3</div>
+                    <div class="stat-text">AI Modules</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="stat-number">8</div>
+                    <div class="stat-text">Disease Categories</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-text">Client-Side (Private)</div>
+                </div>
+            </div>
+        </section>
+
+        <main>
+            <!-- ═══════════ MODULE 1: HEALTH DIARY ═══════════ -->
+            <section id="module-1" class="glass-card reveal" role="tabpanel" aria-labelledby="mod1-title">
+                <div class="section-header">
+                    <div class="icon-box primary" aria-hidden="true">📝</div>
+                    <h2 id="mod1-title">Health Diary — AI Text Analysis</h2>
+                </div>
+                <p class="section-subtitle">
+                    Describe the elderly's condition in free-form text. The AI will classify urgency level, detect potential diseases, and provide recommendations.
+                </p>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="log-input" class="sr-only">Health condition description</label>
+                    <textarea id="log-input" rows="4" 
+                        placeholder="Example: Grandpa has been coughing frequently and complaining of mild chest tightness since this morning..."
+                        aria-describedby="input-hint"></textarea>
+                    <div id="input-hint" class="flex items-center gap-sm mt-1 flex-wrap">
+                        <button type="button" id="btn-voice-input" class="btn btn-ghost btn-sm" aria-label="Dictate using voice">
+                            🎙️ Voice Dictation
+                        </button>
+                        <span id="voice-status" class="text-sm" style="color: var(--danger); display: none;" aria-live="polite">
+                            🔴 Listening... Please speak.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <button id="btn-analyze" class="btn btn-primary btn-block" aria-label="Analyze health condition">
+                            🧠 Analyze Condition
+                        </button>
+                        <button id="btn-open-scanner" class="btn btn-secondary btn-block mt-2" aria-label="Open vital sign scanner">
+                            📷 Add Vital Signs (Module 2)
+                        </button>
+                    </div>
+
+                    <div class="result-panel" id="result-panel" aria-live="polite">
+                        <div class="result-header">
+                            <span class="result-label">AI Classification Result</span>
+                            <button type="button" id="btn-speak-result" class="btn btn-ghost btn-sm" aria-label="Read result aloud">
+                                🔊 Read Aloud
+                            </button>
+                        </div>
+                        <h3 id="text-result-urgency" class="result-urgency">No data yet</h3>
+                        <div id="text-result-badge" class="badge badge-low" style="display: none;">Normal</div>
+
+                        <p class="result-label mt-2" style="margin-bottom: 0.25rem;">Early Disease Detection:</p>
+                        <h4 id="text-result-disease" class="result-disease">--</h4>
+
+                        <!-- Confidence Score -->
+                        <div id="confidence-section" class="confidence-meter" style="display: none;">
+                            <div class="confidence-label">
+                                <span>Prediction Confidence</span>
+                                <span id="confidence-value">0%</span>
+                            </div>
+                            <div class="confidence-bar-track">
+                                <div id="confidence-bar" class="confidence-bar-fill"></div>
+                            </div>
+                        </div>
+
+                        <p class="result-label mt-2" style="margin-bottom: 0.25rem;">💡 In-Depth Analysis & Recommendation:</p>
+                        <div id="text-result-recommendation" class="result-recommendation">--</div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="mt-3" style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3>Daily History</h3>
+                        <button id="btn-export-csv" class="btn btn-ghost btn-sm" aria-label="Export history to CSV">
+                            📥 Export CSV
+                        </button>
+                    </div>
+                    <div id="log-history" class="log-list" aria-label="Health log history">
+                        <!-- Logs will be appended here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════ MODULE 2: VITAL SIGN SCANNER ═══════════ -->
+            <section id="module-2" class="glass-card reveal hidden" role="tabpanel" aria-labelledby="mod2-title">
+                <div class="section-header">
+                    <div class="icon-box secondary" aria-hidden="true">📷</div>
+                    <h2 id="mod2-title">Vital Sign Scanner — Computer Vision</h2>
+                </div>
+                <p class="section-subtitle">
+                    Position the elderly's face towards the camera. Ensure good lighting and stay still for 30 seconds. 
+                    Heart rate is estimated via rPPG (skin color changes) and respiratory rate via chest motion analysis.
+                </p>
+
+                <div class="video-wrapper">
+                    <video id="videoElement" autoplay muted playsinline aria-label="Camera feed for vital sign scanning"></video>
+                    <canvas id="canvasElement" aria-hidden="true"></canvas>
+                    <div id="scan-overlay" class="scan-overlay"></div>
+                </div>
+
+                <!-- Real-Time Validation & Signal Quality Bar -->
+                <div id="live-validation-bar" class="flex justify-between items-center gap-sm mt-2 flex-wrap text-sm" style="background: rgba(15, 23, 42, 0.6); padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                    <div class="flex items-center gap-xs">
+                        <span style="color: var(--text-muted);">Face Tracking:</span>
+                        <span id="val-face-status" class="badge badge-medium">Searching...</span>
+                    </div>
+                    <div class="flex items-center gap-xs">
+                        <span style="color: var(--text-muted);">Lighting Quality:</span>
+                        <span id="val-lighting-status" class="badge badge-low">Checking...</span>
+                    </div>
+                    <div class="flex items-center gap-xs">
+                        <span style="color: var(--text-muted);">Signal Quality (SNR):</span>
+                        <span id="val-snr-status" class="badge badge-low">-- %</span>
+                    </div>
+                </div>
+
+                <div class="progress-container mt-2" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div id="scan-progress" class="progress-bar"></div>
+                </div>
+                <p id="instruction-text" class="instruction-text">Waiting for camera...</p>
+
+                <!-- Live Signal Chart -->
+                <div class="signal-chart-container" id="signal-chart-wrapper">
+                    <span class="chart-label">Live rPPG Signal (Green-Red Chrominance Differential)</span>
+                    <canvas id="signalChart" height="140"></canvas>
+                </div>
+
+                <!-- Vital Results -->
+                <div class="vital-results" aria-label="Vital sign results">
+                    <div class="vital-box">
+                        <div class="vital-label">❤️ Heart Rate (Estimated)</div>
+                        <div id="hr-result" class="vital-value">--</div>
+                        <div class="vital-label">BPM</div>
+                        <div id="hr-status-badge" class="badge badge-low mt-1">Normal Range: 60–100 BPM</div>
+                        <div id="hr-confidence-text" class="text-xs mt-1" style="color: var(--text-muted);">Signal Confidence: --%</div>
+                    </div>
+                    <div class="vital-box">
+                        <div class="vital-label">🫁 Respiratory Rate (Estimated)</div>
+                        <div id="rr-result" class="vital-value">--</div>
+                        <div class="vital-label">breaths/min</div>
+                        <div id="rr-status-badge" class="badge badge-low mt-1">Normal Range: 12–20 /min</div>
+                        <div id="rr-confidence-text" class="text-xs mt-1" style="color: var(--text-muted);">Motion Quality: --%</div>
+                    </div>
+                </div>
+
+                <!-- Reference Card -->
+                <div class="ref-card">
+                    <h4>📊 Vital Sign Reference Ranges (Elderly)</h4>
+                    <div class="grid-2" style="gap: 1rem; text-align: left;">
+                        <div>
+                            <strong style="color: var(--secondary-light);">❤️ Heart Rate:</strong>
+                            <ul>
+                                <li><strong>Normal:</strong> 60–100 BPM</li>
+                                <li><strong>Tachycardia:</strong> &gt; 100 BPM</li>
+                                <li><strong>Bradycardia:</strong> &lt; 60 BPM</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong style="color: var(--secondary-light);">🫁 Respiratory Rate:</strong>
+                            <ul>
+                                <li><strong>Normal:</strong> 12–20 breaths/min</li>
+                                <li><strong>Tachypnea:</strong> &gt; 20 breaths/min</li>
+                                <li><strong>Bradypnea:</strong> &lt; 12 breaths/min</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-md mt-3 flex-wrap">
+                    <button id="btn-start-scan" class="btn btn-success" aria-label="Start 30-second vital sign scan">
+                        ▶ Start Scan (30s)
+                    </button>
+                    <button id="btn-close-scanner" class="btn btn-secondary" aria-label="Go back to health diary">
+                        ← Back to Diary
+                    </button>
+                    <button id="btn-save-vital" class="btn btn-primary hidden" aria-label="Save vital sign results">
+                        💾 Save Results
+                    </button>
+                </div>
+
+                <div class="disclaimer" role="note">
+                    <strong>⚠️ DISCLAIMER:</strong> This is a non-medical estimation prototype built using computer vision for the YCWC 2026 competition. 
+                    It is NOT a replacement for medical devices (pulse oximeter, stethoscope). 
+                    All processing is done locally on your device — no video is stored or uploaded.
+                </div>
+            </section>
+
+            <!-- ═══════════ MODULE 3: ANALYTICS DASHBOARD ═══════════ -->
+            <section id="module-3" class="glass-card reveal hidden" role="tabpanel" aria-labelledby="mod3-title">
+                <div class="section-header">
+                    <div class="icon-box accent" aria-hidden="true">📊</div>
+                    <h2 id="mod3-title">Analytics Dashboard</h2>
+                </div>
+                <p class="section-subtitle">
+                    Track health trends over time. All data is stored locally in your browser — never uploaded to any server.
+                </p>
+
+                <!-- Stats Grid -->
+                <div class="grid-auto stagger" id="stats-grid" aria-label="Summary statistics">
+                    <div class="stat-card">
+                        <div class="stat-icon purple" aria-hidden="true">📋</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-total-entries">0</div>
+                            <div class="stat-label">Total Entries</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green" aria-hidden="true">💚</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-normal-count">0</div>
+                            <div class="stat-label">Normal Days</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon amber" aria-hidden="true">⚠️</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-medium-count">0</div>
+                            <div class="stat-label">Attention Needed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red" aria-hidden="true">🚨</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-high-count">0</div>
+                            <div class="stat-label">Emergency Alerts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid-2 mt-2">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">❤️ Heart Rate Trend</div>
+                        <canvas id="hrTrendChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div class="chart-title">🫁 Respiratory Rate Trend</div>
+                        <canvas id="rrTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-wrapper mt-2">
+                    <div class="chart-title">📊 Urgency Level Distribution</div>
+                    <canvas id="urgencyChart" height="120"></canvas>
+                </div>
+
+                <div class="flex justify-center gap-md mt-3 flex-wrap">
+                    <button id="btn-load-demo" class="btn btn-primary" aria-label="Load demo sample data for testing">
+                        ✨ Load Demo Data (For Jury)
+                    </button>
+                    <button id="btn-dashboard-export" class="btn btn-secondary" aria-label="Export all data as CSV">
+                        📥 Export CSV
+                    </button>
+                    <button id="btn-print-report" class="btn btn-secondary" aria-label="Print medical report">
+                        🖨️ Print Report
+                    </button>
+                    <button id="btn-clear-data" class="btn btn-danger" aria-label="Clear all stored data">
+                        🗑️ Clear All Data
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- ═══════════ FOOTER ═══════════ -->
+        <footer style="text-align: center; padding: 2rem 0 1rem; color: var(--text-muted); font-size: 0.8rem;">
+            <p>Elderly Health Companion AI — Built with ❤️ for YCWC 2026</p>
+            <p style="margin-top: 0.25rem;">NLP · Computer Vision (rPPG) · Voice Assistant · 100% Client-Side Privacy</p>
+        </footer>
+    </div>
+
+    <!-- ═══════════ SCRIPTS ═══════════ -->
+    <!-- ML Inference (Module 1) -->
+    <script src="js/predict.js"></script>
+
+    <!-- Face Detection (Module 2) -->
+    <script src="js/face-api.min.js"></script>
+
+    <!-- Core Modules -->
+    <script src="js/scanner.js"></script>
+    <script src="js/voice.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW registration skipped:', err));
+            });
+        }
+    </script>
+</body>
+</html>

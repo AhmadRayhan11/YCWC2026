@@ -1,0 +1,18 @@
+{
+  "name": "Vitalis AI - Senior Health Companion",
+  "short_name": "Vitalis AI",
+  "description": "AI-Powered Non-Invasive Health & Vital Signs Monitoring Companion for Seniors",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><path d='M30 50 L42 50 L48 30 L54 70 L60 45 L66 55 L72 50 L80 50' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
