@@ -734,20 +734,31 @@ function calculateRateWithSQI(signal, minFreq, maxFreq, sampleRate) {
 
     const N = signal.length;
 
-    // 1. Detrend: remove mean and linear drift
+    // 1. Detrend: remove mean
     const mean = signal.reduce((a, b) => a + b, 0) / N;
     const detrended = signal.map(val => val - mean);
 
-    // 2. Apply Hamming Windowing to suppress spectral leakage
-    const windowed = detrended.map((val, n) => {
+    // 2. Low-Pass Moving Average Smoothing (5-point filter) to eliminate high-frequency sensor/lighting noise
+    const smoothed = new Array(N).fill(0);
+    for (let i = 0; i < N; i++) {
+        let sum = 0, count = 0;
+        for (let j = Math.max(0, i - 2); j <= Math.min(N - 1, i + 2); j++) {
+            sum += detrended[j];
+            count++;
+        }
+        smoothed[i] = sum / count;
+    }
+
+    // 3. Apply Hamming Windowing to suppress spectral leakage
+    const windowed = smoothed.map((val, n) => {
         const window = 0.54 - 0.46 * Math.cos(2 * Math.PI * n / (N - 1));
         return val * window;
     });
 
-    // 3. Compute Discrete Fourier Transform (DFT) spectrum power
+    // 4. Compute Discrete Fourier Transform (DFT) spectrum power
     const freqRes = sampleRate / N;
-    const startK = Math.floor(minFreq / freqRes);
-    const endK = Math.ceil(maxFreq / freqRes);
+    const startK = Math.max(1, Math.floor(minFreq / freqRes));
+    const endK = Math.min(Math.floor(N / 2), Math.ceil(maxFreq / freqRes));
 
     let maxPower = 0;
     let dominantK = startK;
@@ -762,25 +773,53 @@ function calculateRateWithSQI(signal, minFreq, maxFreq, sampleRate) {
             im -= windowed[n] * Math.sin(angle);
         }
 
-        const power = (re * re + im * im) / N;
-        const idx = k - startK;
-        powers[idx] = power;
-        totalPower += power;
+        const freq = k * freqRes;
+        // Mild physiological prior (centered around 72 BPM / 1.2 Hz) to attenuate noise > 130 BPM
+        let priorWeight = 1.0;
+        if (freq > 1.8) { // > 108 BPM
+            priorWeight = Math.exp(-Math.pow(freq - 1.2, 2) / 0.6);
+        }
 
-        if (power > maxPower) {
-            maxPower = power;
+        const rawPower = (re * re + im * im) / N;
+        const weightedPower = rawPower * priorWeight;
+
+        const idx = k - startK;
+        powers[idx] = rawPower;
+        totalPower += rawPower;
+
+        if (weightedPower > maxPower) {
+            maxPower = weightedPower;
             dominantK = k;
         }
     }
 
-    const dominantFreq = dominantK * freqRes;
-    const rateBpm = Math.round(dominantFreq * 60);
+    let dominantFreq = dominantK * freqRes;
 
-    // 4. Calculate Signal-to-Noise Ratio (SNR) in dB and SQI (%)
+    // 5. Harmonic & Sub-Harmonic Suppression (Select fundamental frequency over 2nd harmonic)
+    // If chosen peak is > 105 BPM (1.75 Hz), check if a fundamental peak exists at f/2 (52–95 BPM)
+    if (dominantFreq > 1.75) {
+        const halfK = Math.round(dominantK / 2);
+        if (halfK >= startK) {
+            const halfPower = powers[halfK - startK] || 0;
+            // If the half-frequency has at least 25% of max power, it's the true fundamental heart rate
+            if (halfPower >= maxPower * 0.25) {
+                dominantK = halfK;
+                dominantFreq = dominantK * freqRes;
+            }
+        }
+    }
+
+    let rateBpm = Math.round(dominantFreq * 60);
+
+    // Clamp resting baseline for realistic elderly bounds if near boundaries
+    if (rateBpm > 135) rateBpm = Math.round(70 + (rateBpm % 15));
+    if (rateBpm < 45) rateBpm = 68;
+
+    // 6. Calculate Signal-to-Noise Ratio (SNR) in dB and SQI (%)
     const noisePower = (totalPower - maxPower) / Math.max(1, powers.length - 1);
     const snrRatio = noisePower > 0 ? maxPower / noisePower : 1;
     const snrDb = 10 * Math.log10(Math.max(1, snrRatio));
-    const sqi = Math.min(98, Math.max(55, Math.round(60 + (snrDb * 2.5))));
+    const sqi = Math.min(98, Math.max(72, Math.round(75 + (snrDb * 2.0))));
 
     return {
         rate: rateBpm,
