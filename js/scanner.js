@@ -171,14 +171,23 @@ Promise.all([
 btnStart.addEventListener('click', startScanner);
 
 /**
- * Initialize camera stream via WebRTC
+ * Initialize camera stream via WebRTC with robust error handling
  * @returns {Promise<boolean>} Whether camera was successfully initialized
  */
 async function initCamera() {
-    if (stream && stream.active) return true;
+    if (stream && stream.active && video.srcObject && !video.paused) {
+        return true;
+    }
 
-    instructionText.textContent = "Accessing camera...";
+    if (instructionText) instructionText.textContent = "Accessing camera...";
+
     try {
+        // Stop any dead/hanging tracks first
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -188,22 +197,47 @@ async function initCamera() {
                 }
             });
         } catch (e1) {
-            // Fallback with relaxed constraints
+            // Fallback with minimal constraints
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
         }
 
         video.srcObject = stream;
-        await video.play();
 
-        instructionText.textContent = isModelLoaded
-            ? "Camera active. Position your face and click 'Start Scan'."
-            : "Camera active. Click 'Start Scan' to begin.";
+        // Wait for video metadata to load before playing
+        await new Promise((resolve) => {
+            if (video.readyState >= 1) {
+                resolve();
+            } else {
+                video.onloadedmetadata = () => resolve();
+                setTimeout(resolve, 1000); // 1s fallback timeout
+            }
+        });
+
+        try {
+            await video.play();
+        } catch (playErr) {
+            console.warn("[Scanner] video.play() warning:", playErr);
+        }
+
+        if (instructionText) {
+            instructionText.textContent = isModelLoaded
+                ? "🟢 Camera active. Position your face and click 'Start Scan'."
+                : "🟢 Camera active. Click 'Start Scan' to begin.";
+        }
         return true;
     } catch (err) {
         console.error("[Scanner] Camera access failed:", err);
-        instructionText.textContent = window.location.protocol === 'file:'
-            ? `⚠️ Camera blocked in file:// mode. Use a local server. Error: ${err.message}`
-            : `⚠️ Camera access failed: ${err.message}. Please grant camera permission.`;
+        let msg = `⚠️ Camera error: ${err.message}`;
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            msg = "⚠️ Camera access denied. Click the camera icon in your browser address bar to grant permission.";
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            msg = "⚠️ Camera is currently in use by another app (Zoom, Teams, OBS, or Windows Camera App). Please close other apps and try again.";
+        } else if (window.location.protocol === 'file:') {
+            msg = "⚠️ Browser blocks camera in file:// mode. Open via http://localhost:8000.";
+        }
+
+        if (instructionText) instructionText.textContent = msg;
+        if (typeof showToast === 'function') showToast(msg, "error");
         return false;
     }
 }
